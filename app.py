@@ -11,7 +11,12 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 import requests
 
 from imessage import send_imessage
-from database import get_sender, save_sender
+from database import (
+    get_sender, save_sender,
+    register_agent, get_agent_by_token, get_all_agents,
+    update_agent_heartbeat, get_pending_messages, update_message_status,
+    queue_message
+)
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -238,6 +243,113 @@ def send_bulk():
         'success_count': success_count,
         'total': len(results)
     })
+
+
+# === Phase 2: Agent API endpoints ===
+
+@app.route('/api/agents/register', methods=['POST'])
+def api_register_agent():
+    """Register a new agent."""
+    data = request.json
+    name = data.get('name', '').strip()
+    phone = data.get('phone', '').strip()
+
+    if not name or not phone:
+        return jsonify({'error': 'Name and phone required'}), 400
+
+    result = register_agent(name, phone)
+    return jsonify(result)
+
+
+@app.route('/api/agents/poll', methods=['POST'])
+def api_agent_poll():
+    """Agent heartbeat - returns pending messages."""
+    auth = request.headers.get('Authorization', '')
+    if not auth.startswith('Bearer '):
+        return jsonify({'error': 'Invalid authorization'}), 401
+
+    token = auth[7:]
+    agent = get_agent_by_token(token)
+    if not agent:
+        return jsonify({'error': 'Invalid token'}), 401
+
+    update_agent_heartbeat(agent['id'])
+    messages = get_pending_messages(agent['id'])
+
+    return jsonify({
+        'agent_id': agent['id'],
+        'messages': messages
+    })
+
+
+@app.route('/api/agents/report', methods=['POST'])
+def api_agent_report():
+    """Agent reports message send status."""
+    auth = request.headers.get('Authorization', '')
+    if not auth.startswith('Bearer '):
+        return jsonify({'error': 'Invalid authorization'}), 401
+
+    token = auth[7:]
+    agent = get_agent_by_token(token)
+    if not agent:
+        return jsonify({'error': 'Invalid token'}), 401
+
+    data = request.json
+    message_id = data.get('message_id')
+    status = data.get('status')
+    error = data.get('error')
+
+    if not message_id or status not in ('sent', 'failed'):
+        return jsonify({'error': 'Invalid request'}), 400
+
+    update_message_status(message_id, status, error)
+    return jsonify({'success': True})
+
+
+@app.route('/api/agents', methods=['GET'])
+@login_required
+def api_list_agents():
+    """List all registered agents."""
+    agents = get_all_agents()
+    return jsonify(agents)
+
+
+@app.route('/api/queue', methods=['POST'])
+@login_required
+def api_queue_message():
+    """Queue a message to be sent by a specific agent."""
+    data = request.json
+    agent_id = data.get('agent_id')
+    recipient_phone = data.get('phone', '').strip()
+    message_text = data.get('message', '').strip()
+
+    if not agent_id or not recipient_phone or not message_text:
+        return jsonify({'error': 'agent_id, phone, and message required'}), 400
+
+    message_id = queue_message(agent_id, recipient_phone, message_text)
+    return jsonify({'success': True, 'message_id': message_id})
+
+
+@app.route('/api/queue/bulk', methods=['POST'])
+@login_required
+def api_queue_bulk():
+    """Queue multiple messages for a specific agent."""
+    data = request.json
+    agent_id = data.get('agent_id')
+    messages = data.get('messages', [])
+
+    if not agent_id or not messages:
+        return jsonify({'error': 'agent_id and messages required'}), 400
+
+    queued = []
+    for msg in messages:
+        phone = msg.get('phone', '').strip()
+        text = msg.get('message', '').strip()
+        if phone and text:
+            message_id = queue_message(agent_id, phone, text)
+            queued.append({'phone': phone, 'message_id': message_id})
+
+    return jsonify({'success': True, 'queued': len(queued), 'messages': queued})
 
 
 if __name__ == '__main__':

@@ -63,6 +63,33 @@ Use `{column_name}` to insert values from your sheet:
 Hi {name}, I'm reaching out regarding {company}...
 ```
 
+## Phase 2: Multi-Mac / Distributed Mode
+
+For teams that want to send from multiple phone numbers (e.g., escalation from VP's phone):
+
+### Setup Central Server
+Run the web app on a server accessible to all team members.
+
+### Setup Mac Agents
+On each Mac that should send messages:
+
+```bash
+# First time registration
+python agent.py --server http://your-server:5001 --name "VP Sales" --phone "+1-555-VP-1234"
+
+# Subsequent runs (config saved)
+python agent.py --server http://your-server:5001
+```
+
+The agent will:
+1. Register with the central server
+2. Poll for pending messages every 5 seconds
+3. Send messages via AppleScript
+4. Report status back to server
+
+### Sending from Remote Macs
+In the web UI, use the "Send From" dropdown to select which registered Mac should send the message. Messages are queued and the remote agent picks them up.
+
 ## Version
 
 See [VERSION](VERSION) file.

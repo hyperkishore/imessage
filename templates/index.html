@@ -27,19 +27,13 @@
 
         h1 { font-size: 1.5rem; color: #1d1d1f; }
 
-        .sender-badge {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            background: #e8f4fd;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
+        .header-links a {
+            color: #666;
+            text-decoration: none;
+            margin-left: 1rem;
             font-size: 0.875rem;
         }
-
-        .sender-badge strong { color: #0071e3; }
-        .sender-badge a { color: #666; text-decoration: none; margin-left: 0.5rem; }
-        .sender-badge a:hover { color: #0071e3; }
+        .header-links a:hover { color: #0071e3; }
 
         .card {
             background: white;
@@ -56,7 +50,7 @@
             color: #333;
         }
 
-        input, textarea {
+        input, textarea, select {
             width: 100%;
             padding: 0.75rem;
             border: 1px solid #ddd;
@@ -65,7 +59,7 @@
             font-family: inherit;
         }
 
-        input:focus, textarea:focus {
+        input:focus, textarea:focus, select:focus {
             outline: none;
             border-color: #0071e3;
         }
@@ -73,6 +67,25 @@
         textarea { min-height: 70px; resize: vertical; }
 
         .hint { font-size: 0.8rem; color: #888; margin-top: 0.25rem; }
+
+        .sender-select {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .sender-select > div { flex: 1; }
+
+        .sender-status {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        .sender-status.online { background: #34c759; }
+        .sender-status.offline { background: #ff3b30; }
+        .sender-status.local { background: #0071e3; }
 
         .btn {
             padding: 0.6rem 1.25rem;
@@ -90,10 +103,12 @@
         .btn-green { background: #34c759; color: white; }
         .btn-green:hover { background: #2db850; }
 
+        .btn-sm { padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+
         .status {
             padding: 0.75rem;
             border-radius: 8px;
-            margin-bottom: 1rem;
+            margin: 1rem 0;
             font-size: 0.9rem;
         }
 
@@ -112,6 +127,7 @@
 
         .message-item:last-child { border-bottom: none; }
         .message-item.sent { background: #f0fff0; }
+        .message-item.queued { background: #fff8e0; }
         .message-item.failed { background: #fff0f0; }
 
         .message-item .phone {
@@ -141,9 +157,19 @@
 
         .count { font-size: 0.9rem; color: #666; }
 
+        .mode-indicator {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-left: 0.5rem;
+        }
+        .mode-local { background: #e8f4fd; color: #0071e3; }
+        .mode-remote { background: #fff3e0; color: #f57c00; }
+
         @media (max-width: 600px) {
             .message-item { grid-template-columns: 1fr; }
             .header { flex-direction: column; gap: 1rem; align-items: flex-start; }
+            .sender-select { flex-direction: column; }
         }
     </style>
 </head>
@@ -151,10 +177,23 @@
     <div class="container">
         <div class="header">
             <h1>iMessage Sender</h1>
-            <div class="sender-badge">
-                Sending as <strong>{{ sender.name }}</strong> ({{ sender.phone }})
-                <a href="/setup">edit</a>
+            <div class="header-links">
+                <a href="/setup">edit profile</a>
                 <a href="/logout">logout</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <label>Send From</label>
+            <div class="sender-select">
+                <div>
+                    <select id="sender-select" onchange="onSenderChange()">
+                        <option value="local" data-online="true">
+                            This Mac - {{ sender.name }} ({{ sender.phone }})
+                        </option>
+                    </select>
+                    <p class="hint" id="sender-hint">Messages will be sent directly from this Mac</p>
+                </div>
             </div>
         </div>
 
@@ -178,8 +217,9 @@
             <div class="card">
                 <div id="messages-list"></div>
                 <div class="actions-bar">
-                    <button class="btn btn-green" onclick="sendAll()">Send All</button>
+                    <button class="btn btn-green" id="send-all-btn" onclick="sendAll()">Send All</button>
                     <span class="count" id="count-text"></span>
+                    <span class="mode-indicator" id="mode-indicator"></span>
                 </div>
             </div>
         </div>
@@ -187,6 +227,69 @@
 
     <script>
         let previewData = [];
+        let agents = [];
+        let selectedAgentId = 'local';
+
+        // Load available agents on page load
+        async function loadAgents() {
+            try {
+                const res = await fetch('/api/agents');
+                if (res.ok) {
+                    agents = await res.json();
+                    updateSenderDropdown();
+                }
+            } catch (e) {
+                console.log('Could not load agents:', e);
+            }
+        }
+
+        function updateSenderDropdown() {
+            const select = document.getElementById('sender-select');
+            const localOption = select.options[0];
+
+            // Remove old remote options
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+
+            // Add remote agents
+            agents.forEach(agent => {
+                const opt = document.createElement('option');
+                opt.value = agent.id;
+                opt.dataset.online = agent.is_online ? 'true' : 'false';
+                const status = agent.is_online ? '●' : '○';
+                opt.textContent = `${status} ${agent.name} (${agent.phone})`;
+                select.add(opt);
+            });
+        }
+
+        function onSenderChange() {
+            const select = document.getElementById('sender-select');
+            selectedAgentId = select.value;
+            const isLocal = selectedAgentId === 'local';
+            const hint = document.getElementById('sender-hint');
+
+            if (isLocal) {
+                hint.textContent = 'Messages will be sent directly from this Mac';
+            } else {
+                const agent = agents.find(a => a.id == selectedAgentId);
+                const status = agent?.is_online ? 'online' : 'offline';
+                hint.textContent = `Messages will be queued for ${agent?.name}'s Mac (${status})`;
+            }
+
+            updateModeIndicator();
+        }
+
+        function updateModeIndicator() {
+            const indicator = document.getElementById('mode-indicator');
+            if (selectedAgentId === 'local') {
+                indicator.textContent = 'Direct Send';
+                indicator.className = 'mode-indicator mode-local';
+            } else {
+                indicator.textContent = 'Queue Mode';
+                indicator.className = 'mode-indicator mode-remote';
+            }
+        }
 
         function showStatus(msg, isError) {
             const el = document.getElementById('status');
@@ -196,9 +299,9 @@
         }
 
         function updateCount() {
-            const sent = previewData.filter(p => p.status === 'sent').length;
+            const sent = previewData.filter(p => p.status === 'sent' || p.status === 'queued').length;
             const total = previewData.length;
-            document.getElementById('count-text').textContent = `${sent}/${total} sent`;
+            document.getElementById('count-text').textContent = `${sent}/${total} processed`;
         }
 
         function renderMessages() {
@@ -208,16 +311,17 @@
                         <div class="phone">${p.phone}</div>
                         <div class="name">${p.name || ''}</div>
                     </div>
-                    <textarea id="msg-${i}" ${p.status === 'sent' ? 'disabled' : ''}>${p.message}</textarea>
-                    <button class="btn ${p.status === 'sent' ? 'btn-blue' : 'btn-green'}"
+                    <textarea id="msg-${i}" ${p.status ? 'disabled' : ''}>${p.message}</textarea>
+                    <button class="btn ${p.status ? 'btn-blue' : 'btn-green'} btn-sm"
                             onclick="sendOne(${i})"
-                            ${p.status === 'sent' ? 'disabled' : ''}>
-                        ${p.status === 'sent' ? 'Sent' : p.status === 'failed' ? 'Retry' : 'Send'}
+                            ${p.status ? 'disabled' : ''}>
+                        ${p.status === 'sent' ? 'Sent' : p.status === 'queued' ? 'Queued' : p.status === 'failed' ? 'Retry' : 'Send'}
                     </button>
                 </div>
             `).join('');
             document.getElementById('messages-list').innerHTML = html;
             updateCount();
+            updateModeIndicator();
         }
 
         async function loadPreview() {
@@ -262,17 +366,32 @@
             const phone = previewData[idx].phone;
 
             try {
-                const res = await fetch('/send-one', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone, message: msg })
-                });
-                const data = await res.json();
+                let res, data;
 
-                previewData[idx].status = data.success ? 'sent' : 'failed';
+                if (selectedAgentId === 'local') {
+                    // Direct send from this Mac
+                    res = await fetch('/send-one', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone, message: msg })
+                    });
+                    data = await res.json();
+                    previewData[idx].status = data.success ? 'sent' : 'failed';
+                    showStatus(data.success ? `Sent to ${phone}` : `Failed: ${data.error}`, !data.success);
+                } else {
+                    // Queue for remote agent
+                    res = await fetch('/api/queue', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ agent_id: selectedAgentId, phone, message: msg })
+                    });
+                    data = await res.json();
+                    previewData[idx].status = data.success ? 'queued' : 'failed';
+                    showStatus(data.success ? `Queued for ${phone}` : `Failed: ${data.error}`, !data.success);
+                }
+
                 previewData[idx].message = msg;
                 renderMessages();
-                showStatus(data.success ? `Sent to ${phone}` : `Failed: ${data.error}`, !data.success);
             } catch (e) {
                 previewData[idx].status = 'failed';
                 renderMessages();
@@ -281,18 +400,54 @@
         }
 
         async function sendAll() {
-            const unsent = previewData.filter(p => p.status !== 'sent');
+            const unsent = previewData.filter(p => !p.status);
             if (!unsent.length) return;
 
-            if (!confirm(`Send ${unsent.length} messages?`)) return;
+            const mode = selectedAgentId === 'local' ? 'send' : 'queue';
+            if (!confirm(`${mode === 'send' ? 'Send' : 'Queue'} ${unsent.length} messages?`)) return;
 
-            for (let i = 0; i < previewData.length; i++) {
-                if (previewData[i].status !== 'sent') {
-                    await sendOne(i);
-                    await new Promise(r => setTimeout(r, 500)); // Small delay between sends
+            document.getElementById('send-all-btn').disabled = true;
+
+            if (selectedAgentId === 'local') {
+                // Send one by one for local
+                for (let i = 0; i < previewData.length; i++) {
+                    if (!previewData[i].status) {
+                        await sendOne(i);
+                        await new Promise(r => setTimeout(r, 500));
+                    }
+                }
+            } else {
+                // Bulk queue for remote
+                const messages = unsent.map(p => ({
+                    phone: p.phone,
+                    message: document.getElementById(`msg-${previewData.indexOf(p)}`).value.trim()
+                }));
+
+                try {
+                    const res = await fetch('/api/queue/bulk', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ agent_id: selectedAgentId, messages })
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        unsent.forEach(p => p.status = 'queued');
+                        renderMessages();
+                        showStatus(`Queued ${data.queued} messages`);
+                    } else {
+                        showStatus('Failed to queue: ' + data.error, true);
+                    }
+                } catch (e) {
+                    showStatus('Error: ' + e.message, true);
                 }
             }
+
+            document.getElementById('send-all-btn').disabled = false;
         }
+
+        // Initialize
+        loadAgents();
     </script>
 </body>
 </html>
