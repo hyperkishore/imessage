@@ -39,6 +39,47 @@
             color: #86868b;
         }
 
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .sender-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #e8f4fd;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .sender-label {
+            color: #86868b;
+        }
+
+        .sender-name {
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        .sender-phone {
+            color: #0071e3;
+            font-family: monospace;
+        }
+
+        .edit-link {
+            color: #86868b;
+            text-decoration: none;
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
+        }
+
+        .edit-link:hover {
+            color: #0071e3;
+        }
+
         .logout-btn {
             color: #0071e3;
             text-decoration: none;
@@ -304,7 +345,15 @@
                 <h1>iMessage Auto-Sender</h1>
                 <p class="subtitle">Send personalized iMessages from a Google Sheet</p>
             </div>
-            <a href="/logout" class="logout-btn">Logout</a>
+            <div class="header-right">
+                <div class="sender-info">
+                    <span class="sender-label">Sending as</span>
+                    <span class="sender-name">{{ sender.name }}</span>
+                    <span class="sender-phone">{{ sender.phone }}</span>
+                    <a href="/setup" class="edit-link">Edit</a>
+                </div>
+                <a href="/logout" class="logout-btn">Logout</a>
+            </div>
         </div>
 
         <div class="card">

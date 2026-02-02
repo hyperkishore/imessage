@@ -11,6 +11,7 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 import requests
 
 from imessage import send_imessage
+from database import get_sender, save_sender
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -27,6 +28,16 @@ def login_required(f):
             if request.is_json:
                 return jsonify({'error': 'Not authenticated'}), 401
             return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def sender_required(f):
+    """Decorator to require sender profile setup."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not get_sender():
+            return redirect(url_for('setup'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -93,10 +104,40 @@ def logout():
     return redirect(url_for('login'))
 
 
+@app.route('/setup', methods=['GET', 'POST'])
+@login_required
+def setup():
+    """Sender profile setup page."""
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        phone = request.form.get('phone', '').strip()
+
+        if not name or not phone:
+            return render_template('setup.html', error='Name and phone are required')
+
+        save_sender(name, phone)
+        return redirect(url_for('index'))
+
+    sender = get_sender()
+    return render_template('setup.html', sender=sender)
+
+
 @app.route('/')
 @login_required
+@sender_required
 def index():
-    return render_template('index.html')
+    sender = get_sender()
+    return render_template('index.html', sender=sender)
+
+
+@app.route('/api/sender')
+@login_required
+def api_sender():
+    """Get current sender info."""
+    sender = get_sender()
+    if not sender:
+        return jsonify({'error': 'No sender configured'}), 404
+    return jsonify(sender)
 
 
 @app.route('/preview', methods=['POST'])
