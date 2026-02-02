@@ -3,396 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iMessage Auto-Sender</title>
+    <title>iMessage Sender</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f5f5f7;
             min-height: 100vh;
-            padding: 2rem;
+            padding: 1.5rem;
         }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
+        .container { max-width: 900px; margin: 0 auto; }
 
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e0e0e0;
         }
 
-        h1 {
-            color: #1d1d1f;
-            margin-bottom: 0.25rem;
-        }
+        h1 { font-size: 1.5rem; color: #1d1d1f; }
 
-        .subtitle {
-            color: #86868b;
-        }
-
-        .header-right {
+        .sender-badge {
             display: flex;
             align-items: center;
-            gap: 1.5rem;
-        }
-
-        .sender-info {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            gap: 0.75rem;
             background: #e8f4fd;
             padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-size: 0.9rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
         }
 
-        .sender-label {
-            color: #86868b;
-        }
-
-        .sender-name {
-            font-weight: 600;
-            color: #1d1d1f;
-        }
-
-        .sender-phone {
-            color: #0071e3;
-            font-family: monospace;
-        }
-
-        .edit-link {
-            color: #86868b;
-            text-decoration: none;
-            font-size: 0.85rem;
-            margin-left: 0.5rem;
-        }
-
-        .edit-link:hover {
-            color: #0071e3;
-        }
-
-        .logout-btn {
-            color: #0071e3;
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .logout-btn:hover {
-            text-decoration: underline;
-        }
+        .sender-badge strong { color: #0071e3; }
+        .sender-badge a { color: #666; text-decoration: none; margin-left: 0.5rem; }
+        .sender-badge a:hover { color: #0071e3; }
 
         .card {
             background: white;
             border-radius: 12px;
-            padding: 1.5rem;
+            padding: 1.25rem;
             margin-bottom: 1rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         }
 
         label {
             display: block;
             font-weight: 500;
             margin-bottom: 0.5rem;
-            color: #1d1d1f;
+            color: #333;
         }
 
-        input[type="text"], textarea {
+        input, textarea {
             width: 100%;
             padding: 0.75rem;
-            border: 1px solid #d2d2d7;
+            border: 1px solid #ddd;
             border-radius: 8px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-family: inherit;
         }
 
-        input[type="text"]:focus, textarea:focus {
+        input:focus, textarea:focus {
             outline: none;
             border-color: #0071e3;
-            box-shadow: 0 0 0 3px rgba(0,113,227,0.1);
         }
 
-        textarea {
-            min-height: 80px;
-            resize: vertical;
-        }
+        textarea { min-height: 70px; resize: vertical; }
 
-        .hint {
-            font-size: 0.85rem;
-            color: #86868b;
-            margin-top: 0.5rem;
-        }
-
-        .variables {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-        }
-
-        .variable-tag {
-            background: #e8e8ed;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            font-family: monospace;
-            cursor: pointer;
-        }
-
-        .variable-tag:hover {
-            background: #d2d2d7;
-        }
+        .hint { font-size: 0.8rem; color: #888; margin-top: 0.25rem; }
 
         .btn {
-            padding: 0.5rem 1rem;
+            padding: 0.6rem 1.25rem;
             border: none;
             border-radius: 8px;
             font-size: 0.9rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
         }
 
-        .btn-lg {
-            padding: 0.75rem 1.5rem;
-            font-size: 1rem;
-        }
+        .btn-blue { background: #0071e3; color: white; }
+        .btn-blue:hover { background: #0077ed; }
+        .btn-blue:disabled { background: #999; cursor: not-allowed; }
 
-        .btn-primary {
-            background: #0071e3;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #0077ed;
-        }
-
-        .btn-primary:disabled {
-            background: #86868b;
-            cursor: not-allowed;
-        }
-
-        .btn-success {
-            background: #34c759;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #2db850;
-        }
-
-        .btn-success:disabled {
-            background: #86868b;
-            cursor: not-allowed;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .message-row {
-            display: grid;
-            grid-template-columns: 140px 120px 1fr auto;
-            gap: 1rem;
-            align-items: start;
-            padding: 1rem;
-            border-bottom: 1px solid #e8e8ed;
-        }
-
-        .message-row:last-child {
-            border-bottom: none;
-        }
-
-        .message-row.sent {
-            background: #e5f9e7;
-        }
-
-        .message-row.failed {
-            background: #ffeaea;
-        }
-
-        .message-row .phone {
-            font-family: monospace;
-            font-size: 0.9rem;
-            padding-top: 0.5rem;
-        }
-
-        .message-row .name {
-            font-size: 0.9rem;
-            color: #1d1d1f;
-            padding-top: 0.5rem;
-        }
-
-        .message-row textarea {
-            min-height: 60px;
-            font-size: 0.9rem;
-        }
-
-        .message-row .actions {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            align-items: flex-end;
-        }
-
-        .status-icon {
-            font-size: 1.2rem;
-        }
+        .btn-green { background: #34c759; color: white; }
+        .btn-green:hover { background: #2db850; }
 
         .status {
-            padding: 0.75rem 1rem;
+            padding: 0.75rem;
             border-radius: 8px;
             margin-bottom: 1rem;
+            font-size: 0.9rem;
         }
 
-        .status-error {
-            background: #ffeaea;
-            color: #d70015;
-        }
+        .status-error { background: #fee; color: #c00; }
+        .status-success { background: #efe; color: #060; }
+        .hidden { display: none; }
 
-        .status-success {
-            background: #e5f9e7;
-            color: #1d8335;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        #preview-section {
-            margin-top: 1rem;
-        }
-
-        .preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .preview-header h3 {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .count-badge {
-            background: #0071e3;
-            color: white;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            font-weight: normal;
-        }
-
-        .table-header {
+        .message-item {
             display: grid;
-            grid-template-columns: 140px 120px 1fr auto;
+            grid-template-columns: 130px 1fr auto;
             gap: 1rem;
-            padding: 0.75rem 1rem;
-            background: #f5f5f7;
-            font-weight: 500;
-            font-size: 0.85rem;
-            border-radius: 8px 8px 0 0;
+            padding: 0.75rem;
+            border-bottom: 1px solid #eee;
+            align-items: start;
         }
 
-        .bulk-actions {
+        .message-item:last-child { border-bottom: none; }
+        .message-item.sent { background: #f0fff0; }
+        .message-item.failed { background: #fff0f0; }
+
+        .message-item .phone {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #333;
+        }
+
+        .message-item .name {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .message-item textarea {
+            min-height: 50px;
+            font-size: 0.85rem;
+        }
+
+        .actions-bar {
             display: flex;
             gap: 1rem;
+            align-items: center;
             margin-top: 1rem;
             padding-top: 1rem;
-            border-top: 1px solid #e8e8ed;
+            border-top: 1px solid #eee;
         }
 
-        .progress-text {
-            font-size: 0.9rem;
-            color: #86868b;
-        }
+        .count { font-size: 0.9rem; color: #666; }
 
-        @media (max-width: 768px) {
-            .message-row, .table-header {
-                grid-template-columns: 1fr;
-            }
-            .table-header {
-                display: none;
-            }
-            .message-row {
-                display: flex;
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-            .message-row .actions {
-                flex-direction: row;
-                justify-content: flex-end;
-            }
+        @media (max-width: 600px) {
+            .message-item { grid-template-columns: 1fr; }
+            .header { flex-direction: column; gap: 1rem; align-items: flex-start; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <div>
-                <h1>iMessage Auto-Sender</h1>
-                <p class="subtitle">Send personalized iMessages from a Google Sheet</p>
-            </div>
-            <div class="header-right">
-                <div class="sender-info">
-                    <span class="sender-label">Sending as</span>
-                    <span class="sender-name">{{ sender.name }}</span>
-                    <span class="sender-phone">{{ sender.phone }}</span>
-                    <a href="/setup" class="edit-link">Edit</a>
-                </div>
-                <a href="/logout" class="logout-btn">Logout</a>
+            <h1>iMessage Sender</h1>
+            <div class="sender-badge">
+                Sending as <strong>{{ sender.name }}</strong> ({{ sender.phone }})
+                <a href="/setup">edit</a>
+                <a href="/logout">logout</a>
             </div>
         </div>
 
         <div class="card">
-            <label for="sheet-url">Google Sheet URL</label>
+            <label>Google Sheet URL</label>
             <input type="text" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/...">
-            <p class="hint">Sheet must be public ("Anyone with the link can view") and have a "phone" column</p>
+            <p class="hint">Must be public and have a "phone" column</p>
         </div>
 
         <div class="card">
-            <label for="template">Message Template</label>
-            <textarea id="template" placeholder="Hi {name}, your appointment is on {date}"></textarea>
+            <label>Message Template</label>
+            <textarea id="template" placeholder="Hi {name}, just following up on {topic}..."></textarea>
             <p class="hint">Use {column_name} for variables from your sheet</p>
-            <div id="available-vars" class="variables hidden"></div>
         </div>
 
-        <div class="btn-group">
-            <button class="btn btn-primary btn-lg" id="preview-btn" onclick="loadPreview()">Preview Messages</button>
-        </div>
+        <button class="btn btn-blue" id="preview-btn" onclick="loadPreview()">Load Preview</button>
 
         <div id="status" class="status hidden"></div>
 
         <div id="preview-section" class="hidden">
             <div class="card">
-                <div class="preview-header">
-                    <h3>Messages <span id="count-badge" class="count-badge"></span></h3>
-                </div>
-
-                <div class="table-header">
-                    <div>Phone</div>
-                    <div>Name</div>
-                    <div>Message (editable)</div>
-                    <div>Action</div>
-                </div>
-
                 <div id="messages-list"></div>
-
-                <div class="bulk-actions">
-                    <button class="btn btn-success btn-lg" id="send-all-btn" onclick="sendAll()">Send All Messages</button>
-                    <span id="progress-text" class="progress-text"></span>
+                <div class="actions-bar">
+                    <button class="btn btn-green" onclick="sendAll()">Send All</button>
+                    <span class="count" id="count-text"></span>
                 </div>
             </div>
         </div>
@@ -401,230 +188,109 @@
     <script>
         let previewData = [];
 
-        function showStatus(message, isError = false) {
-            const status = document.getElementById('status');
-            status.textContent = message;
-            status.className = 'status ' + (isError ? 'status-error' : 'status-success');
-            status.classList.remove('hidden');
+        function showStatus(msg, isError) {
+            const el = document.getElementById('status');
+            el.textContent = msg;
+            el.className = 'status ' + (isError ? 'status-error' : 'status-success');
+            el.classList.remove('hidden');
         }
 
-        function hideStatus() {
-            document.getElementById('status').classList.add('hidden');
-        }
-
-        function insertVariable(varName) {
-            const textarea = document.getElementById('template');
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const text = textarea.value;
-            const insertion = `{${varName}}`;
-            textarea.value = text.substring(0, start) + insertion + text.substring(end);
-            textarea.focus();
-            textarea.setSelectionRange(start + insertion.length, start + insertion.length);
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text || '';
-            return div.innerHTML;
-        }
-
-        function updateProgressText() {
+        function updateCount() {
             const sent = previewData.filter(p => p.status === 'sent').length;
-            const failed = previewData.filter(p => p.status === 'failed').length;
             const total = previewData.length;
-            const pending = total - sent - failed;
-
-            let text = '';
-            if (sent > 0) text += `${sent} sent`;
-            if (failed > 0) text += `${text ? ', ' : ''}${failed} failed`;
-            if (pending > 0 && (sent > 0 || failed > 0)) text += `, ${pending} pending`;
-
-            document.getElementById('progress-text').textContent = text;
+            document.getElementById('count-text').textContent = `${sent}/${total} sent`;
         }
 
         function renderMessages() {
-            const list = document.getElementById('messages-list');
-            list.innerHTML = previewData.map((p, idx) => `
-                <div class="message-row ${p.status || ''}" id="row-${idx}">
-                    <div class="phone">${escapeHtml(p.phone)}</div>
-                    <div class="name">${escapeHtml(p.name) || '-'}</div>
-                    <textarea id="msg-${idx}" ${p.status === 'sent' ? 'disabled' : ''}>${escapeHtml(p.message)}</textarea>
-                    <div class="actions">
-                        ${p.status === 'sent'
-                            ? '<span class="status-icon">&#10004;</span>'
-                            : p.status === 'failed'
-                                ? `<span class="status-icon" title="${escapeHtml(p.error)}">&#10008;</span>
-                                   <button class="btn btn-primary" onclick="sendOne(${idx})">Retry</button>`
-                                : `<button class="btn btn-success" onclick="sendOne(${idx})" id="send-btn-${idx}">Send</button>`
-                        }
+            const html = previewData.map((p, i) => `
+                <div class="message-item ${p.status || ''}" id="row-${i}">
+                    <div>
+                        <div class="phone">${p.phone}</div>
+                        <div class="name">${p.name || ''}</div>
                     </div>
+                    <textarea id="msg-${i}" ${p.status === 'sent' ? 'disabled' : ''}>${p.message}</textarea>
+                    <button class="btn ${p.status === 'sent' ? 'btn-blue' : 'btn-green'}"
+                            onclick="sendOne(${i})"
+                            ${p.status === 'sent' ? 'disabled' : ''}>
+                        ${p.status === 'sent' ? 'Sent' : p.status === 'failed' ? 'Retry' : 'Send'}
+                    </button>
                 </div>
             `).join('');
-            updateProgressText();
+            document.getElementById('messages-list').innerHTML = html;
+            updateCount();
         }
 
         async function loadPreview() {
             const sheetUrl = document.getElementById('sheet-url').value.trim();
             const template = document.getElementById('template').value.trim();
 
-            if (!sheetUrl) {
-                showStatus('Please enter a Google Sheet URL', true);
-                return;
-            }
-            if (!template) {
-                showStatus('Please enter a message template', true);
+            if (!sheetUrl || !template) {
+                showStatus('Please fill in both fields', true);
                 return;
             }
 
-            hideStatus();
             document.getElementById('preview-btn').disabled = true;
             document.getElementById('preview-btn').textContent = 'Loading...';
-            document.getElementById('preview-section').classList.add('hidden');
 
             try {
-                const response = await fetch('/preview', {
+                const res = await fetch('/preview', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sheet_url: sheetUrl, template })
                 });
+                const data = await res.json();
 
-                const data = await response.json();
-
-                if (!response.ok) {
-                    showStatus(data.error || 'Failed to load preview', true);
+                if (!res.ok) {
+                    showStatus(data.error, true);
                     return;
                 }
 
-                // Store preview data with status tracking
-                previewData = data.previews.map(p => ({ ...p, status: null, error: null }));
-
-                // Show available variables
-                const varsContainer = document.getElementById('available-vars');
-                varsContainer.innerHTML = data.headers
-                    .filter(h => h.trim())
-                    .map(h => `<span class="variable-tag" onclick="insertVariable('${h}')">{${h}}</span>`)
-                    .join('');
-                varsContainer.classList.remove('hidden');
-
-                document.getElementById('count-badge').textContent = `${data.count} messages`;
+                previewData = data.previews.map(p => ({ ...p, status: null }));
                 renderMessages();
                 document.getElementById('preview-section').classList.remove('hidden');
-                showStatus(`Found ${data.count} messages`);
-
-            } catch (err) {
-                showStatus('Network error: ' + err.message, true);
+                showStatus(`Loaded ${data.count} messages`);
+            } catch (e) {
+                showStatus('Error: ' + e.message, true);
             } finally {
                 document.getElementById('preview-btn').disabled = false;
-                document.getElementById('preview-btn').textContent = 'Preview Messages';
+                document.getElementById('preview-btn').textContent = 'Load Preview';
             }
         }
 
         async function sendOne(idx) {
-            const row = previewData[idx];
-            const messageEl = document.getElementById(`msg-${idx}`);
-            const btnEl = document.getElementById(`send-btn-${idx}`);
-
-            const phone = row.phone;
-            const message = messageEl.value.trim();
-
-            if (!message) {
-                showStatus('Message cannot be empty', true);
-                return;
-            }
-
-            if (btnEl) {
-                btnEl.disabled = true;
-                btnEl.textContent = 'Sending...';
-            }
+            const msg = document.getElementById(`msg-${idx}`).value.trim();
+            const phone = previewData[idx].phone;
 
             try {
-                const response = await fetch('/send-one', {
+                const res = await fetch('/send-one', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone, message })
+                    body: JSON.stringify({ phone, message: msg })
                 });
+                const data = await res.json();
 
-                const result = await response.json();
-
-                if (result.success) {
-                    previewData[idx].status = 'sent';
-                    previewData[idx].message = message;
-                    showStatus(`Message sent to ${phone}`);
-                } else {
-                    previewData[idx].status = 'failed';
-                    previewData[idx].error = result.error;
-                    showStatus(`Failed to send to ${phone}: ${result.error}`, true);
-                }
-
+                previewData[idx].status = data.success ? 'sent' : 'failed';
+                previewData[idx].message = msg;
                 renderMessages();
-
-            } catch (err) {
+                showStatus(data.success ? `Sent to ${phone}` : `Failed: ${data.error}`, !data.success);
+            } catch (e) {
                 previewData[idx].status = 'failed';
-                previewData[idx].error = err.message;
-                showStatus('Network error: ' + err.message, true);
                 renderMessages();
+                showStatus('Error: ' + e.message, true);
             }
         }
 
         async function sendAll() {
-            const unsent = previewData
-                .map((p, idx) => ({ ...p, idx }))
-                .filter(p => p.status !== 'sent');
+            const unsent = previewData.filter(p => p.status !== 'sent');
+            if (!unsent.length) return;
 
-            if (unsent.length === 0) {
-                showStatus('All messages already sent');
-                return;
-            }
+            if (!confirm(`Send ${unsent.length} messages?`)) return;
 
-            if (!confirm(`Send ${unsent.length} messages?`)) {
-                return;
-            }
-
-            document.getElementById('send-all-btn').disabled = true;
-            document.getElementById('send-all-btn').textContent = 'Sending...';
-
-            // Get current message values from textareas
-            const messages = unsent.map(p => ({
-                phone: p.phone,
-                message: document.getElementById(`msg-${p.idx}`).value.trim(),
-                idx: p.idx
-            }));
-
-            try {
-                const response = await fetch('/send-bulk', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ messages })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    showStatus(data.error || 'Failed to send messages', true);
-                    return;
+            for (let i = 0; i < previewData.length; i++) {
+                if (previewData[i].status !== 'sent') {
+                    await sendOne(i);
+                    await new Promise(r => setTimeout(r, 500)); // Small delay between sends
                 }
-
-                // Update status for each message
-                data.results.forEach((result, i) => {
-                    const idx = messages[i].idx;
-                    if (result.success) {
-                        previewData[idx].status = 'sent';
-                        previewData[idx].message = messages[i].message;
-                    } else {
-                        previewData[idx].status = 'failed';
-                        previewData[idx].error = result.error;
-                    }
-                });
-
-                renderMessages();
-                showStatus(`Sent ${data.success_count}/${data.total} messages`);
-
-            } catch (err) {
-                showStatus('Network error: ' + err.message, true);
-            } finally {
-                document.getElementById('send-all-btn').disabled = false;
-                document.getElementById('send-all-btn').textContent = 'Send All Messages';
             }
         }
     </script>
