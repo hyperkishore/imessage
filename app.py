@@ -12,6 +12,7 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_cors import CORS
 from dotenv import load_dotenv
 import requests
 from markupsafe import escape
@@ -28,6 +29,12 @@ from database import (
 load_dotenv()
 
 app = Flask(__name__)
+
+# === CORS Configuration (for React dev server) ===
+CORS(app, supports_credentials=True, origins=[
+    'http://localhost:5173',
+    'http://127.0.0.1:5173'
+])
 
 # === Security Configuration ===
 
@@ -514,7 +521,7 @@ def api_queue_bulk():
 @csrf.exempt
 def health_check():
     """Health check endpoint for monitoring."""
-    return jsonify({'status': 'ok', 'version': '0.4.00'})
+    return jsonify({'status': 'ok', 'version': '0.5.00'})
 
 
 if __name__ == '__main__':
