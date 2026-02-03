@@ -229,6 +229,7 @@
         let previewData = [];
         let agents = [];
         let selectedAgentId = 'local';
+        const csrfToken = '{{ csrf_token() }}';
 
         // Load available agents on page load
         async function loadAgents() {
@@ -339,7 +340,7 @@
             try {
                 const res = await fetch('/preview', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
                     body: JSON.stringify({ sheet_url: sheetUrl, template })
                 });
                 const data = await res.json();
@@ -372,7 +373,7 @@
                     // Direct send from this Mac
                     res = await fetch('/send-one', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
                         body: JSON.stringify({ phone, message: msg })
                     });
                     data = await res.json();
@@ -382,7 +383,7 @@
                     // Queue for remote agent
                     res = await fetch('/api/queue', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
                         body: JSON.stringify({ agent_id: selectedAgentId, phone, message: msg })
                     });
                     data = await res.json();
@@ -426,7 +427,7 @@
                 try {
                     const res = await fetch('/api/queue/bulk', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
                         body: JSON.stringify({ agent_id: selectedAgentId, messages })
                     });
                     const data = await res.json();
