@@ -88,7 +88,11 @@ function App() {
   }
 
   if (view === 'loading') {
-    return <div className="loading">Loading...</div>
+    return (
+      <div className="loading" role="status" aria-live="polite">
+        <span>Loading…</span>
+      </div>
+    )
   }
 
   if (view === 'login') {

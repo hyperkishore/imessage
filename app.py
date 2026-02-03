@@ -521,7 +521,7 @@ def api_queue_bulk():
 @csrf.exempt
 def health_check():
     """Health check endpoint for monitoring."""
-    return jsonify({'status': 'ok', 'version': '0.5.00'})
+    return jsonify({'status': 'ok', 'version': '0.5.01'})
 
 
 if __name__ == '__main__':

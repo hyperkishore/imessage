@@ -26,7 +26,7 @@ function Login({ onLogin }) {
         <h1>iMessage Sender</h1>
         <p className="login-subtitle">Enter password to continue</p>
 
-        {error && <div className="error-message">{error}</div>}
+        {error && <div className="error-message" role="alert" aria-live="polite">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -34,16 +34,17 @@ function Login({ onLogin }) {
             <input
               type="password"
               id="password"
+              name="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
-              autoFocus
+              placeholder="Enter password…"
+              autoComplete="current-password"
               required
             />
           </div>
 
           <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Logging in…' : 'Login'}
           </button>
         </form>
       </div>

@@ -37,7 +37,7 @@ function Setup({ onSetup, initialData }) {
         <h1>Sender Setup</h1>
         <p className="setup-subtitle">Configure your iMessage sender profile</p>
 
-        {error && <div className="error-message">{error}</div>}
+        {error && <div className="error-message" role="alert" aria-live="polite">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -45,9 +45,11 @@ function Setup({ onSetup, initialData }) {
             <input
               type="text"
               id="name"
+              name="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="John Smith"
+              placeholder="John Smith…"
+              autoComplete="name"
               required
             />
             <span className="hint">How recipients will see your name</span>
@@ -58,16 +60,18 @@ function Setup({ onSetup, initialData }) {
             <input
               type="tel"
               id="phone"
+              name="phone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+1 (555) 123-4567"
+              autoComplete="tel"
               required
             />
             <span className="hint">Your iMessage phone number on this Mac</span>
           </div>
 
           <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? 'Saving...' : 'Continue'}
+            {loading ? 'Saving…' : 'Continue'}
           </button>
         </form>
       </div>

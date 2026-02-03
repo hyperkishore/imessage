@@ -68,6 +68,11 @@
   border-color: #667eea;
 }
 
+.form-group input:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
 .btn-primary {
   width: 100%;
   padding: 0.875rem;
@@ -84,6 +89,11 @@
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
 }
 
 .btn-primary:disabled {

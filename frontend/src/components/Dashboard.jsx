@@ -10,6 +10,7 @@ function Dashboard({ sender, onLogout, onEditProfile, apiBase }) {
   const [status, setStatus] = useState({ type: '', text: '' })
   const [loading, setLoading] = useState(false)
   const [csrfToken, setCsrfToken] = useState('')
+  const [confirmModal, setConfirmModal] = useState({ open: false, message: '', onConfirm: null })
 
   useEffect(() => {
     loadAgents()
@@ -141,19 +142,28 @@ function Dashboard({ sender, onLogout, onEditProfile, apiBase }) {
     }
   }
 
-  const handleSendAll = async () => {
-    const unsent = messages.filter(m => !m.status)
-    if (!unsent.length) return
-
-    const action = selectedSender === 'local' ? 'send' : 'queue'
-    if (!confirm(`${action === 'send' ? 'Send' : 'Queue'} ${unsent.length} messages?`)) return
-
+  const executeSendAll = async () => {
     for (let i = 0; i < messages.length; i++) {
       if (!messages[i].status) {
         await handleSendOne(i)
         await new Promise(r => setTimeout(r, 500))
       }
     }
+  }
+
+  const handleSendAll = () => {
+    const unsent = messages.filter(m => !m.status)
+    if (!unsent.length) return
+
+    const action = selectedSender === 'local' ? 'Send' : 'Queue'
+    setConfirmModal({
+      open: true,
+      message: `${action} ${unsent.length} messages?`,
+      onConfirm: () => {
+        setConfirmModal({ open: false, message: '', onConfirm: null })
+        executeSendAll()
+      }
+    })
   }
 
   const updateMessage = (index, newMessage) => {
@@ -172,16 +182,18 @@ function Dashboard({ sender, onLogout, onEditProfile, apiBase }) {
           <div className="sender-badge">
             Sending as <strong>{sender.name}</strong>
             <span className="phone">{sender.phone}</span>
-            <button className="link-btn" onClick={onEditProfile}>edit</button>
+            <button className="link-btn" onClick={onEditProfile} aria-label="Edit sender profile">edit</button>
           </div>
-          <button className="link-btn" onClick={onLogout}>logout</button>
+          <button className="link-btn" onClick={onLogout} aria-label="Log out of application">logout</button>
         </div>
       </header>
 
       <main className="dashboard-main">
         <div className="card">
-          <label>Send From</label>
+          <label htmlFor="sender-select">Send From</label>
           <select
+            id="sender-select"
+            name="sender"
             value={selectedSender}
             onChange={(e) => setSelectedSender(e.target.value)}
             className="sender-select"
@@ -201,22 +213,27 @@ function Dashboard({ sender, onLogout, onEditProfile, apiBase }) {
         </div>
 
         <div className="card">
-          <label>Google Sheet URL</label>
+          <label htmlFor="sheet-url">Google Sheet URL</label>
           <input
             type="url"
+            id="sheet-url"
+            name="sheetUrl"
             value={sheetUrl}
             onChange={(e) => setSheetUrl(e.target.value)}
-            placeholder="https://docs.google.com/spreadsheets/d/..."
+            placeholder="https://docs.google.com/spreadsheets/d/…"
+            autoComplete="url"
           />
           <span className="hint">Must be public and have a "phone" column</span>
         </div>
 
         <div className="card">
-          <label>Message Template</label>
+          <label htmlFor="message-template">Message Template</label>
           <textarea
+            id="message-template"
+            name="template"
             value={template}
             onChange={(e) => setTemplate(e.target.value)}
-            placeholder="Hi {name}, just following up on {topic}..."
+            placeholder="Hi {name}, just following up on {topic}…"
             rows={3}
           />
           <span className="hint">Use {'{column_name}'} for variables from your sheet</span>
@@ -227,14 +244,17 @@ function Dashboard({ sender, onLogout, onEditProfile, apiBase }) {
           onClick={handlePreview}
           disabled={loading}
         >
-          {loading ? 'Loading...' : 'Load Preview'}
+          {loading ? 'Loading…' : 'Load Preview'}
         </button>
 
-        {status.text && (
-          <div className={`status-bar ${status.type}`}>
-            {status.text}
-          </div>
-        )}
+        <div
+          className={`status-bar ${status.type}`}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {status.text}
+        </div>
 
         {messages.length > 0 && (
           <div className="card messages-card">
@@ -260,11 +280,13 @@ function Dashboard({ sender, onLogout, onEditProfile, apiBase }) {
                     onChange={(e) => updateMessage(idx, e.target.value)}
                     disabled={msg.status === 'sent' || msg.status === 'queued'}
                     rows={2}
+                    aria-label={`Message to ${msg.name || msg.phone}`}
                   />
                   <button
                     className={`btn-send ${msg.status || ''}`}
                     onClick={() => handleSendOne(idx)}
                     disabled={msg.status === 'sent' || msg.status === 'queued'}
+                    aria-label={`${msg.status === 'sent' ? 'Sent to' : msg.status === 'queued' ? 'Queued for' : msg.status === 'failed' ? 'Retry sending to' : 'Send to'} ${msg.name || msg.phone}`}
                   >
                     {msg.status === 'sent' ? 'Sent' :
                      msg.status === 'queued' ? 'Queued' :
@@ -282,6 +304,29 @@ function Dashboard({ sender, onLogout, onEditProfile, apiBase }) {
           </div>
         )}
       </main>
+
+      {confirmModal.open && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+          <div className="modal-content">
+            <h2 id="confirm-title">Confirm Action</h2>
+            <p>{confirmModal.message}</p>
+            <div className="modal-actions">
+              <button
+                className="btn-cancel"
+                onClick={() => setConfirmModal({ open: false, message: '', onConfirm: null })}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn-confirm"
+                onClick={confirmModal.onConfirm}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

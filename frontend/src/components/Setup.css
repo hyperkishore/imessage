@@ -68,6 +68,11 @@
   border-color: #11998e;
 }
 
+.form-group input:focus-visible {
+  outline: 2px solid #11998e;
+  outline-offset: 2px;
+}
+
 .hint {
   display: block;
   font-size: 0.8rem;
@@ -91,6 +96,11 @@
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(17, 153, 142, 0.4);
+}
+
+.btn-primary:focus-visible {
+  outline: 2px solid #11998e;
+  outline-offset: 2px;
 }
 
 .btn-primary:disabled {
