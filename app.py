@@ -200,6 +200,53 @@ def logout():
     return redirect(url_for('login'))
 
 
+# === SPA-friendly JSON API endpoints ===
+
+@app.route('/api/csrf-token')
+def api_csrf_token():
+    """Get CSRF token for SPA usage."""
+    return jsonify({'csrf_token': generate_csrf()})
+
+
+@app.route('/api/login', methods=['POST'])
+@limiter.limit("10 per minute")
+@csrf.exempt  # Exempt from CSRF for SPA - relies on password auth
+def api_login():
+    """JSON login endpoint for SPA."""
+    data = request.json or {}
+    password = data.get('password', '')
+
+    if password == APP_PASSWORD:
+        session['authenticated'] = True
+        session.permanent = True
+        return jsonify({'success': True})
+    return jsonify({'success': False, 'error': 'Invalid password'}), 401
+
+
+@app.route('/api/setup', methods=['POST'])
+@login_required
+@csrf.exempt  # Exempt from CSRF for SPA - session auth required
+def api_setup():
+    """JSON setup endpoint for SPA."""
+    data = request.json or {}
+    name = data.get('name', '').strip()
+    phone = data.get('phone', '').strip()
+
+    # Validate name
+    if not name or len(name) < 2:
+        return jsonify({'success': False, 'error': 'Name must be at least 2 characters'}), 400
+    if len(name) > 100:
+        return jsonify({'success': False, 'error': 'Name too long (max 100 characters)'}), 400
+
+    # Validate phone
+    valid, result = validate_phone(phone)
+    if not valid:
+        return jsonify({'success': False, 'error': result}), 400
+
+    save_sender(name, result)
+    return jsonify({'success': True})
+
+
 @app.route('/setup', methods=['GET', 'POST'])
 @login_required
 def setup():
@@ -247,6 +294,7 @@ def api_sender():
 @app.route('/preview', methods=['POST'])
 @login_required
 @limiter.limit("20 per minute")
+@csrf.exempt  # SPA uses session auth
 def preview():
     """Fetch sheet and preview messages."""
     data = request.json or {}
@@ -304,6 +352,7 @@ def preview():
 @app.route('/send-one', methods=['POST'])
 @login_required
 @limiter.limit("30 per minute")
+@csrf.exempt  # SPA uses session auth
 def send_one():
     """Send a single message."""
     data = request.json or {}
@@ -326,6 +375,7 @@ def send_one():
 @app.route('/send-bulk', methods=['POST'])
 @login_required
 @limiter.limit("5 per minute")
+@csrf.exempt  # SPA uses session auth
 def send_bulk():
     """Send multiple messages."""
     data = request.json or {}
@@ -457,6 +507,7 @@ def api_list_agents():
 @app.route('/api/queue', methods=['POST'])
 @login_required
 @limiter.limit("30 per minute")
+@csrf.exempt  # SPA uses session auth
 def api_queue_message():
     """Queue a message to be sent by a specific agent."""
     data = request.json or {}
@@ -485,6 +536,7 @@ def api_queue_message():
 @app.route('/api/queue/bulk', methods=['POST'])
 @login_required
 @limiter.limit("10 per minute")
+@csrf.exempt  # SPA uses session auth
 def api_queue_bulk():
     """Queue multiple messages for a specific agent."""
     data = request.json or {}
@@ -521,7 +573,7 @@ def api_queue_bulk():
 @csrf.exempt
 def health_check():
     """Health check endpoint for monitoring."""
-    return jsonify({'status': 'ok', 'version': '0.5.01'})
+    return jsonify({'status': 'ok', 'version': '0.5.02'})
 
 
 if __name__ == '__main__':

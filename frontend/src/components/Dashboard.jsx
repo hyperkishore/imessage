@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import './Dashboard.css'
 
-function Dashboard({ sender, onLogout, onEditProfile, apiBase }) {
+function Dashboard({ sender, onLogout, onEditProfile }) {
   const [agents, setAgents] = useState([])
   const [selectedSender, setSelectedSender] = useState('local')
   const [sheetUrl, setSheetUrl] = useState('')
@@ -19,7 +19,7 @@ function Dashboard({ sender, onLogout, onEditProfile, apiBase }) {
 
   const fetchCsrfToken = async () => {
     try {
-      const res = await fetch(`${apiBase}/`, { credentials: 'include' })
+      const res = await fetch(`/`, { credentials: 'include' })
       const html = await res.text()
       const match = html.match(/csrfToken = '([^']+)'/)
       if (match) setCsrfToken(match[1])
@@ -30,7 +30,7 @@ function Dashboard({ sender, onLogout, onEditProfile, apiBase }) {
 
   const loadAgents = async () => {
     try {
-      const res = await fetch(`${apiBase}/api/agents`, { credentials: 'include' })
+      const res = await fetch(`/api/agents`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         setAgents(data)
@@ -53,7 +53,7 @@ function Dashboard({ sender, onLogout, onEditProfile, apiBase }) {
 
     setLoading(true)
     try {
-      const res = await fetch(`${apiBase}/preview`, {
+      const res = await fetch(`/preview`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,7 +87,7 @@ function Dashboard({ sender, onLogout, onEditProfile, apiBase }) {
       let res, data
 
       if (selectedSender === 'local') {
-        res = await fetch(`${apiBase}/send-one`, {
+        res = await fetch(`/send-one`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ function Dashboard({ sender, onLogout, onEditProfile, apiBase }) {
           data.success ? 'success' : 'error'
         )
       } else {
-        res = await fetch(`${apiBase}/api/queue`, {
+        res = await fetch(`/api/queue`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
